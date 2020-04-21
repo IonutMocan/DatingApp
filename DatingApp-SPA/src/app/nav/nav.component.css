@@ -5,3 +5,10 @@
  .navbar{
     padding-right: 40px;
 }
+
+img {
+    max-height: 50px;
+    border: 1px solid rgb(36, 35, 35);
+    border-radius: 50%;
+    display: inline;
+}
