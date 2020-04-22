@@ -1,6 +1,10 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { AuthService } from '../_service/auth.service';
 import { AlertifyService } from '../_service/alertify.service';
+import { FormGroup, Validators, FormBuilder } from '@angular/forms';
+import { BsDatepickerConfig } from 'ngx-bootstrap';
+import { User } from '../_models/User';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-register',
@@ -8,24 +12,65 @@ import { AlertifyService } from '../_service/alertify.service';
   styleUrls: ['./register.component.css']
 })
 export class RegisterComponent implements OnInit {
-    @Output() cancleRegister = new EventEmitter();
-  model: any = {};
+  @Output() cancleRegister = new EventEmitter();
+  user: User;
+  registerForm: FormGroup;
+  bsConfig: Partial<BsDatepickerConfig>;
 
-  constructor(private authService: AuthService, private aleritfy: AlertifyService) { }
+  constructor(
+    private authService: AuthService,
+    private aleritfy: AlertifyService,
+    private fb: FormBuilder,
+    private router: Router
+  ) {}
 
   ngOnInit() {
+    (this.bsConfig = {
+      containerClass: 'theme-green'
+    }),
+      this.createRegisterForm();
+  }
+
+  createRegisterForm() {
+    this.registerForm = this.fb.group(
+      {
+        gender: ['male'],
+        username: ['', Validators.required],
+        knownAs: ['', Validators.required],
+        dateOfBirth: [null, Validators.required],
+        city: ['', Validators.required],
+        country: ['', Validators.required],
+        password: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(8)]],
+        confirmPassword: ['', Validators.required]
+      },
+      { validator: this.passwordMatchValidator }
+    );
+  }
+
+  passwordMatchValidator(g: FormGroup) {
+    return g.get('password').value === g.get('confirmPassword').value ? null : { mismatch: true };
   }
 
   register() {
-    this.authService.register(this.model).subscribe(() => {
-      this.aleritfy.success('Registration successful');
-    }, error => {
-      this.aleritfy.error(error);
-    } );
+    if (this.registerForm.valid) {
+      this.user = Object.assign({}, this.registerForm.value);
+      this.authService.register(this.user).subscribe(
+        () => {
+          this.aleritfy.success('Registration successful');
+        },
+        (error) => {
+          this.aleritfy.error(error);
+        },
+        () => {
+          this.authService.login(this.user).subscribe(() => {
+            this.router.navigate(['/members']);
+          });
+        }
+      );
+    }
   }
 
   cancel() {
     this.cancleRegister.emit(false);
-   }
-
+  }
 }
