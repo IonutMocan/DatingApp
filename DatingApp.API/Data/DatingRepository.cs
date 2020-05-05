@@ -37,13 +37,21 @@ namespace DatingApp.API.Data
 
         public async Task<Photo> GetPhoto(int id)
         {
-            var photo = await _context.Photos.FirstOrDefaultAsync(p => p.Id == id);
+            var photo = await _context.Photos.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == id);
             return photo;
         }
 
-        public async Task<User> GetUser(int id)
+        public async Task<User> GetUser(int id, bool isCurrentUser) // Pentru a permite userului curent sa-si vada pozele in status pending for approval am adaugat inca un parametru ( isCurrentUser) si urmatoarele linii de cod in functia GetUser(int id): 46 - 50
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+            var query = _context.Users.Include(p => p.Photos).AsQueryable();
+
+            if (isCurrentUser) // Verificam daca userul care detine fotofrafiile respective este userul curent
+            { 
+                query = query.IgnoreQueryFilters(); // Daca intradevar este userul curent ignoram filtrul "query"
+            }
+
+            var user = await query.FirstOrDefaultAsync(u => u.Id == id);
+
             return user;
         }
 
